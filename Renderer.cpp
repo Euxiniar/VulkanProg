@@ -8,11 +8,13 @@
 Renderer::Renderer()
 {
 	_InitInstance();
+	_InitDevice();
 }
 
 
 Renderer::~Renderer()
 {
+	_DeInitDevice();
 	_DeInitInstance();
 }
 
@@ -52,11 +54,32 @@ void Renderer::_InitDevice()
 		vkEnumeratePhysicalDevices(_instance, &gpu_count, gpu_list.data());
 		_gpu = gpu_list[0];
 	}
+	{
+		uint32_t family_count{ 0 };
+		vkGetPhysicalDeviceQueueFamilyProperties(_gpu, &family_count, nullptr);
+		std::vector<VkQueueFamilyProperties> family_property_list(family_count);
+		vkGetPhysicalDeviceQueueFamilyProperties(_gpu, &family_count, family_property_list.data());
 
-	float queue_priorities[]{1.0};
+		bool found{ false };
+		for (uint32_t i{ 0 }; i < family_count; ++i)
+		{
+			if (family_property_list[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+			{
+				found = true;
+				_graphics_family_index = i;
+			}
+		}
+		if (!found)
+		{
+			assert(0 && "Vulkan ERROR: Queue family supporting graphics not found");
+			std::exit(-1);
+		}
+	}
+
+	float queue_priorities[]{1.0f};
 	VkDeviceQueueCreateInfo device_queue_create_info{};
 	device_queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	device_queue_create_info.queueFamilyIndex = ;
+	device_queue_create_info.queueFamilyIndex = _graphics_family_index;
 	device_queue_create_info.queueCount = 1;
 	device_queue_create_info.pQueuePriorities = queue_priorities;
 
@@ -71,4 +94,6 @@ void Renderer::_InitDevice()
 
 void Renderer::_DeInitDevice()
 {
+	vkDestroyDevice(_device, nullptr);
+	_device = nullptr;
 }
