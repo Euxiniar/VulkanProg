@@ -53,6 +53,7 @@ void Renderer::_InitDevice()
 		std::vector<VkPhysicalDevice> gpu_list(gpu_count);
 		vkEnumeratePhysicalDevices(_instance, &gpu_count, gpu_list.data());
 		_gpu = gpu_list[0];
+		vkGetPhysicalDeviceProperties(_gpu, &_gpu_properties);
 	}
 	{
 		uint32_t family_count{ 0 };
@@ -88,8 +89,12 @@ void Renderer::_InitDevice()
 	device_create_info.queueCreateInfoCount = 1;
 	device_create_info.pQueueCreateInfos = &device_queue_create_info;
 
-	vkCreateDevice(_gpu, &device_create_info , nullptr, &_device);
-
+	auto err = vkCreateDevice(_gpu, &device_create_info , nullptr, &_device);
+	if (err != VK_SUCCESS)
+	{
+		assert(0 && "Vulkan ERROR: Device creation failed");
+		std::exit(-1);
+	}
 }
 
 void Renderer::_DeInitDevice()
